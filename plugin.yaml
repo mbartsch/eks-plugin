@@ -1,0 +1,31 @@
+name: eks-cluster
+shortDesc: Allows you to install any kubectl plugin
+longDesc: |
+  This plugin allows to manipulate the EKS Cluster on AWS
+
+  This plugin requiere aws cli to be configured, for 'auto discovery' of
+  the resources it will search for Subnets and Security groups with the 
+  tags 
+
+  kubernetes.io/cluster/cluster-name
+
+  kubectl plugin eks-cluster --action create --cluster-name demo
+
+
+example: kubectl plugin eks-create-cluster cluster-name
+command: ./eks-cluster.sh
+flags:
+  - name: region
+    desc: the region where to operate
+    defValue: us-west-2
+  - name: action
+    desc: list, create, delete, describe
+    defValue: list
+  - name: cluster-name
+    desc: name of the package incase of conflicts
+  - name: subnet-names
+    desc: name of the package incase of conflicts
+  - name: security-groups
+    desc: name of the package incase of conflicts
+  - name: service-role
+    desc: name of the package incase of conflicts
