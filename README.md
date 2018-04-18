@@ -50,6 +50,7 @@ kubectl plugin eks-cluster --action=create --cluster-name=demo
 ```
 
 ## Todo
+- [ ] Move it to use 'trees' instead of a single command
 - [ ] error handling
 - [ ] auto configure $HOME/.kube/config
 - [ ] Write the plugin in python to be more portable
