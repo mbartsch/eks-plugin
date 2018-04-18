@@ -12,7 +12,8 @@ longDesc: |
   kubectl plugin eks-cluster --action create --cluster-name demo
 
 
-example: kubectl plugin eks-create-cluster cluster-name
+example: kubectl plugin eks-cluster --help
+
 command: ./eks-cluster.sh
 flags:
   - name: region
@@ -20,12 +21,46 @@ flags:
     defValue: us-west-2
   - name: action
     desc: list, create, delete, describe
-    defValue: list
+    defValue: "list"
+  - name: detail
+    desc: produce more detailed output
+    defValue: "no"
   - name: cluster-name
-    desc: name of the package incase of conflicts
-  - name: subnet-names
-    desc: name of the package incase of conflicts
-  - name: security-groups
-    desc: name of the package incase of conflicts
-  - name: service-role
-    desc: name of the package incase of conflicts
+    desc: name of the cluster
+  - name: subnet-ids
+    desc: space separated list of subnet ids
+  - name: security-group-ids
+    desc: space separated list of security group ids
+  - name: service-role-arn
+    desc: arn of the service role
+tree:
+  - name: delete
+    shortDesc: delete
+    command: ./eks-delete.sh
+    flags:
+      - name: region
+        desc: the region where to operate
+      - name: cluster-name
+        desc: the region where to operate
+      - name: im-insane
+        desc: are you sure you want to run this???
+  - name: list
+    shortDesc: list
+    command: ./eks-list.sh
+    flags:
+      - name: region
+        desc: the region where to operate
+        defValue: us-west-2
+  - name: describe
+    shortDesc: describe
+    command: ./eks-describe.sh
+    flags:
+      - name: region
+        desc: the region where to operate
+        defValue: us-west-2
+      - name: cluster-name
+        desc: name of the cluster
+        defValue: demo
+      - name: detail
+        desc: produce more detailed output
+        defValue: "no"

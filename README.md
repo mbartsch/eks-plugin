@@ -4,6 +4,10 @@ This plugin allows to create, delete and display the information for a EKS Clust
 ## Requirements
 * bash shell
 * aws cli
+* jq
+
+
+# THIS IS THE DEVEL VERSION INFO BELOW IS NOT ACCURATE
 
 ## Installation
 
