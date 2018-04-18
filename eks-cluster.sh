@@ -13,7 +13,7 @@ list_cluster() {
 }
 
 describe_cluster(){
-  aws --region ${region} eks describe-cluster --cluster-name ${cluster} --output text
+  aws --region ${region} eks describe-cluster --cluster-name ${cluster} --output json
 }
 delete_cluster (){
   echo aws --region ${region} eks delete-cluster --cluster-name ${cluster} 
@@ -21,8 +21,10 @@ delete_cluster (){
 
 create_cluster() {
   SUBNETS=$(aws ec2 describe-subnets --region ${region} --filter Name=tag-key,Values="kubernetes.io/cluster/${cluster}" --query 'Subnets[].SubnetId' --output text)
+  #SUBNETS=$(echo ${SUBNETS} | sed -e 's/ /,/g')
   SECGROUPS=$(aws ec2 describe-security-groups --region ${region} --filter Name=tag-key,Values="kubernetes.io/cluster/${cluster}" --query 'SecurityGroups[].GroupId' --output text)
-  ARN=$(aws iam list-roles --query 'Roles[?AssumeRolePolicyDocument.Statement[?Principal.Service==`eks.amazonaws.com`]]| [0]| Arn')
+  #SECGROUPS=$(echo ${SECGROUPS} | sed -e 's/ /,/g')
+  ARN=$(aws iam list-roles --query 'Roles[?AssumeRolePolicyDocument.Statement[?Principal.Service==`eks.amazonaws.com`]]| [0]| Arn' | sed -e 's/"//g')
   echo ${SUBNETS}
   echo ${SECGROUPS}
   echo "This will create the cluster ${cluster} on the region ${region} using the follwing"
@@ -32,6 +34,7 @@ create_cluster() {
   echo -e "\t${SECGROUPS}"
   echo "Service Role Arn"
   echo -e "\t${ARN}"
+  aws eks --region ${region} create-cluster --cluster-name ${cluster} --security-groups ${SECGROUPS} --subnets ${SUBNETS} --role-arn ${ARN} --output text
   exit 0
 }
 
