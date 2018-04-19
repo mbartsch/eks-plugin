@@ -9,31 +9,32 @@ longDesc: |
 
   kubernetes.io/cluster/cluster-name
 
-  kubectl plugin eks-cluster --action create --cluster-name demo
+  kubectl plugin eks-cluster create --cluster-name cluster-name
+  kubectl plugin eks-cluster list
+  kubectl plugin eks-cluster describe --cluster-name cluster-name
+  kubectl plugin eks-cluster create --cluster-name cluster-name
 
 
 example: kubectl plugin eks-cluster --help
 
 command: ./eks-cluster.sh
-flags:
-  - name: region
-    desc: the region where to operate
-    defValue: us-west-2
-  - name: action
-    desc: list, create, delete, describe
-    defValue: "list"
-  - name: detail
-    desc: produce more detailed output
-    defValue: "no"
-  - name: cluster-name
-    desc: name of the cluster
-  - name: subnet-ids
-    desc: space separated list of subnet ids
-  - name: security-group-ids
-    desc: space separated list of security group ids
-  - name: service-role-arn
-    desc: arn of the service role
+
 tree:
+  - name: create
+    shortDesc: create
+    command: ./eks-create.sh
+    flags:
+      - name: region
+        desc: the region where to operate
+        defValue: us-west-2
+      - name: cluster-name
+        desc: name of the cluster
+      - name: subnet-ids
+        desc: space separated list of subnet ids
+      - name: security-group-ids
+        desc: space separated list of security group ids
+      - name: service-role-arn
+        desc: arn of the service role
   - name: delete
     shortDesc: delete
     command: ./eks-delete.sh
