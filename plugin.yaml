@@ -65,3 +65,13 @@ tree:
       - name: detail
         desc: produce more detailed output
         defValue: "no"
+  - name: showconfig
+    shortDesc: show configuration file
+    command: ./eks-showconfig.sh
+    flags:
+      - name: region
+        desc: the region where to operate
+        defValue: us-west-2
+      - name: cluster-name
+        desc: name of the cluster
+        defValue: demo

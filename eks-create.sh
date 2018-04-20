@@ -29,7 +29,7 @@ create_cluster() {
   echo -e "\t${SECGROUPS}"
   echo "Service Role Arn"
   echo -e "\t${ARN}"
-  aws eks --region ${region} create-cluster --cluster-name ${cluster} --security-groups ${SECGROUPS} --subnets ${SUBNETS} --role-arn ${ARN} --output text
+  aws eks --region ${region} create-cluster --cluster-name ${cluster} --security-groups ${SECGROUPS} --subnets ${SUBNETS} --role-arn ${ARN} --output text --query 'cluster.[clusterName,status]'
   exit 0
 }
 
