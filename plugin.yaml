@@ -1,4 +1,4 @@
-name: eks-cluster
+name: eks
 shortDesc: Allows you to install any kubectl plugin
 longDesc: |
   This plugin allows to manipulate the EKS Cluster on AWS
@@ -9,15 +9,16 @@ longDesc: |
 
   kubernetes.io/cluster/cluster-name
 
-  kubectl plugin eks-cluster create --cluster-name cluster-name
-  kubectl plugin eks-cluster list
-  kubectl plugin eks-cluster describe --cluster-name cluster-name
-  kubectl plugin eks-cluster create --cluster-name cluster-name
+  kubectl plugin eks create --cluster-name cluster-name
+  kubectl plugin eks list
+  kubectl plugin eks describe --cluster-name cluster-name
+  kubectl plugin eks create --cluster-name cluster-name
+  kubectl plugin eks showconfig
 
 
 example: kubectl plugin eks-cluster --help
 
-command: ./eks-cluster.sh
+command: ./eks.sh
 
 tree:
   - name: create
@@ -65,9 +66,9 @@ tree:
       - name: detail
         desc: produce more detailed output
         defValue: "no"
-  - name: showconfig
+  - name: genconf
     shortDesc: show configuration file
-    command: ./eks-showconfig.sh
+    command: ./eks-genconf.sh
     flags:
       - name: region
         desc: the region where to operate
