@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 
 
@@ -16,6 +16,9 @@ autoscaling () {
       echo -e "\t${asg}"
     done
     exit 1
+  elif [ $(echo ${ASGS} | IFS=' ' wc -w) -lt 1 ] ; then
+    echo "No Autoscaling Groups located for cluster ${cluster} on ${region}"
+    exit 2
   fi
   #ASG=${ASGS:-$KUBECTL_PLUGINS_LOCAL_FLAG_ASG_NAME}
   ASG=${KUBECTL_PLUGINS_LOCAL_FLAG_ASG_NAME:-${ASGS}}
