@@ -76,3 +76,30 @@ tree:
       - name: cluster-name
         desc: name of the cluster
         defValue: demo
+  - name: asg
+    shortDesc: display and modify the autoscaling group
+    command: ./eks-asg.sh
+    longDesc: |
+      kubectl plugin eks asg allows you to modify the autoscaling group
+      associated with the EKS cluster.
+
+      This will try to autodiscover the ASG by looking at 
+      the kubernetes.io/cluster/cluster-name tag on the autoscaling group.
+      
+      if more than 1 asg is returned, you must specify the asg with 
+      the asg-name option
+    flags:
+      - name: region
+        desc: the region where to operate
+        defValue: us-west-2
+      - name: cluster-name
+        desc: name of the cluster
+        defValue: demo
+      - name: asg-name
+        desc: name of the autoscaling group
+      - name: min
+        desc: min instances
+      - name: max
+        desc: max instances
+      - name: desired
+        desc: desired number of instances
