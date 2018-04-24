@@ -16,7 +16,7 @@ longDesc: |
   kubectl plugin eks showconfig
 
 
-example: kubectl plugin eks-cluster --help
+example: kubectl plugin eks --help
 
 command: ./eks.sh
 

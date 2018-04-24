@@ -22,27 +22,44 @@ git clone ssh://git.amazon.com/pkg/Kubectl-eks-plugin eks-plugin
 ## Usage
 Currently the plugin will allow to list, create, describe and delete a EKS cluster
 
-By default 'kubectl plugin eks-cluster' will list the cluster on the account
-
-List Cluster on the account
+By default 'kubectl plugin eks' will list the cluster on the account
+* Show help and current clusters
 ```
-kubectl plugin eks-cluster --action=list
+kubectl plugin eks
 ```
-
-Describe Cluster
+* List Cluster on the account
 ```
-kubectl plugin eks-cluster --action=describe --cluster-name=demo
+kubectl plugin eks list
 ```
 
-Delete a cluster
+* Describe Cluster
 ```
-kubectl plugin eks-cluster --action=delete --cluster-name=demo
+kubectl plugin eks describe [--cluster-name=demo][--detail=yes|cert]
 ```
 
-Usage help
+* Delete a cluster
 ```
-kubectl plugin eks-cluster --help
+kubectl plugin eks delete [--cluster-name=demo]
 ```
+* Generate kubeconfig output
+```
+kubectl plugin eks genconf [--cluster-name=demo]
+```
+
+* Usage help
+```
+kubectl plugin eks --help
+```
+### Manage EKS Cluster Worker AutoScaling Groups
+* List Available AutoScaling Group(s)
+```
+kubectl plugin eks asg
+```
+  * Modify the AutoScaling Group
+```
+kubectl plugin eks asg [--asg-name=ASGName][--cluster-name=cluster-name][--desired=num][--min=num][--max=num][--region=region]
+```
+
 
 Create a Cluster
 * the plugin will search for security groups and subnets with the tag 'kubernetes.io/cluster/cluster_name' and use those as parameters to create it
@@ -50,12 +67,13 @@ Create a Cluster
   * The Discover process look for a IAM Profile that has the trust relationship with eks.amazonaws.com
 
 ```
-kubectl plugin eks-cluster --action=create --cluster-name=demo
+kubectl plugin eks --action=create --cluster-name=demo
 ```
 
 ## Todo
-- [ ] Move it to use 'trees' instead of a single command
+- [x] Move it to use 'trees' instead of a single command
 - [ ] error handling
-- [ ] auto configure $HOME/.kube/config
+- [ ] Auto configure $HOME/.kube/config
+  - [x] Create the output to be place in $KUBECONFIG to stdout
 - [ ] Write the plugin in python to be more portable
     - [ ] boto3 issue is blocking this problem.
