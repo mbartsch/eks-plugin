@@ -16,7 +16,7 @@ longDesc: |
   kubectl plugin eks showconfig
 
 
-example: kubectl plugin eks --help
+example: kubectl plugin eks-cluster --help
 
 command: ./eks.sh
 
@@ -76,6 +76,13 @@ tree:
       - name: cluster-name
         desc: name of the cluster
         defValue: demo
+  - name: nodes
+    shortDesc: List Public Ip Of Internal Nodes
+    command: ./eks-getnodes.sh
+    flags:
+      - name: region
+        desc: the region
+        defValue: us-west-2
   - name: asg
     shortDesc: display and modify the autoscaling group
     command: ./eks-asg.sh

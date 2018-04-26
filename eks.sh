@@ -10,11 +10,10 @@ cat<<EOF
 
   kubernetes.io/cluster/cluster-name
 
-  kubectl plugin eks create --cluster-name cluster-name
-  kubectl plugin eks list
-  kubectl plugin eks describe --cluster-name cluster-name
-  kubectl plugin eks create --cluster-name cluster-name
-  kubectl plugin eks asg 
+  kubectl plugin eks-cluster create --cluster-name cluster-name
+  kubectl plugin eks-cluster list
+  kubectl plugin eks-cluster describe --cluster-name cluster-name
+  kubectl plugin eks-cluster create --cluster-name cluster-name
 EOF
 } 
 
