@@ -11,24 +11,25 @@ showconfig(){
     echo "if you just create this, please allow 5 to 10 minutes and try again"
     exit 1
   fi 
-  cat<<EOF
+  mkdir -p ~/.kube/config.d
+  cat<<EOF>~/.kube/config.d/${clusterName}.yaml
 apiVersion: v1
 clusters:
   - cluster:
       certificate-authority-data: >-
         $(echo ${JSON} | jq -r '.cluster.certificateAuthority.data')
       server: ${masterEndpoint}
-    name: kubernetes
+    name: kubernetes-${clusterName}
 contexts:
   - context:
-      cluster: kubernetes
-      user: kubernetes-admin
-    name: aws
+      cluster: kubernetes-${clusterName}
+      user: kubernetes-admin-${clusterName}
+    name: aws-${clusterName}
 current-context: aws
 kind: Config
 preferences: {}
 users:
-  - name: kubernetes-admin
+  - name: kubernetes-admin-${clusterName}
     user:
       exec:
         apiVersion: client.authentication.k8s.io/v1alpha1
@@ -38,7 +39,9 @@ users:
           - '-i'
           - ${clusterName}
 EOF
-
+echo "Now you need to add ~/.kube/config.d/${clusterName}.yaml to your"
+echo "\$KUBECONFIG environment variable"
+echo "export KUBECONFIG=$KUBECONFIG:~/.kube/config.d/${clusterName}.yaml"
 }
 
 showconfig
