@@ -16,32 +16,32 @@ To install this plugin , clone this git repository to $HOME/.kube/plugins
 ```
 mkdir $HOME/.kube/plugins
 cd $HOME/.kube/plugins
-git clone ssh://git.amazon.com/pkg/Kubectl-eks-plugin eks-plugin
+git clone ssh://git.amazon.com/pkg/Kubectl-eks-plugin eks
 ```
 
 ## Usage
 Currently the plugin will allow to list, create, describe and delete a EKS cluster
 
-By default 'kubectl plugin eks-cluster' will list the cluster on the account
+By default 'kubectl plugin eks' will list the cluster on the account
 
 List Cluster on the account
 ```
-kubectl plugin eks-cluster --action=list
+kubectl plugin eks [list]
 ```
 
 Describe Cluster
 ```
-kubectl plugin eks-cluster --action=describe --cluster-name=demo
+kubectl plugin eks describe --cluster-name=demo
 ```
 
 Delete a cluster
 ```
-kubectl plugin eks-cluster --action=delete --cluster-name=demo
+kubectl plugin eks delete --cluster-name=demo
 ```
 
 Usage help
 ```
-kubectl plugin eks-cluster --help
+kubectl plugin eks --help
 ```
 
 Create a Cluster
@@ -50,11 +50,11 @@ Create a Cluster
   * The Discover process look for a IAM Profile that has the trust relationship with eks.amazonaws.com
 
 ```
-kubectl plugin eks-cluster --action=create --cluster-name=demo
+kubectl plugin eks create --cluster-name=demo
 ```
 
 ## Todo
-- [ ] Move it to use 'trees' instead of a single command
+- [X] Move it to use 'trees' instead of a single command
 - [ ] error handling
 - [ ] auto configure $HOME/.kube/config
 - [ ] Write the plugin in python to be more portable
