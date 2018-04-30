@@ -38,7 +38,6 @@ def getclusterName():
   return cluster_name
 
 
-
 def help():
   print("This plugin allows to manipulate the EKS Cluster on AWS")
   print("This plugin requiere aws cli to be configured, for 'auto discovery' of the resources it will search for Subnets and Security groups with the tags")
@@ -148,7 +147,7 @@ def main():
   # region=getregion()
   # #help()
   #list_cluster()
-  describe_cluster('demo',verbose='yes')
+  describe_cluster('demo2',verbose='cert')
 if __name__ == '__main__':
   getRegion()
   main()
