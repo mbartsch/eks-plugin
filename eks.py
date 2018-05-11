@@ -15,8 +15,8 @@ import subprocess
 import yaml
 import boto3
 import jmespath
-from botocore.exceptions import ClientError, ParamValidationError#, ResourceNotFoundException
-import botocore.errorfactory
+#from botocore.exceptions import ClientError, ParamValidationError#, ResourceNotFoundException
+#import botocore.errorfactory
 global region
 FORMAT = "%(levelname)s (Line: %(lineno)04d): %(message)s"
 logging.basicConfig(format=FORMAT, level=logging.DEBUG)
@@ -44,22 +44,9 @@ def getclusterName():
     #exit(2)
   return cluster_name
 
-
-def ekshelp():
-  print("This plugin allows to manipulate the EKS Cluster on AWS")
-  print("This plugin requiere aws cli to be configured, for 'auto discovery'")
-  print("of the resources it will search for Subnets and Security groups with the tags")
-  print("\n")
-  print("kubernetes.io/cluster/cluster-name")
-  print("\n")
-  print("kubectl plugin eks-cluster create --cluster-name cluster-name")
-  print("kubectl plugin eks-cluster list")
-  print("kubectl plugin eks-cluster describe --cluster-name cluster-name")
-  print("kubectl plugin eks-cluster create --cluster-name cluster-name")
-
 def list_cluster():
   """
-  List available clusters on the region
+  List available clusters on the selected region
   """
   eks = boto3.client('eks', region_name=region)
   clusters = eks.list_clusters()
@@ -149,12 +136,12 @@ def create_cluster(clusterName, subnets, securityGroups, roleArn):
   eks = boto3.client('eks', region_name=region)
   try:
     status = eks.create_cluster(clusterName=clusterName,
-                              roleArn=roleArn,
-                              subnets=subnets,
-                              securityGroups=securityGroups)
-  except Exception as e:
+                                roleArn=roleArn,
+                                subnets=subnets,
+                                securityGroups=securityGroups)
+  except Exception as exception:
     #logging all the others as warning
-    logging.critical("Failed. {}".format(e))
+    logging.critical("Failed. %s", format(exception))
     exit(99)
   print(status['cluster'])
   return status['cluster']
@@ -168,9 +155,9 @@ def describe_cluster(clusterName, verbose='yes', output=True):
   eks = boto3.client('eks', region_name=region)
   try:
     cluster = eks.describe_cluster(clusterName=clusterName)
-  except Exception as e:
+  except Exception as exception:
     #logging all the others as warning
-    logging.critical("Failed. {}".format(e))
+    logging.critical("Failed. %s", format(exception))
     exit(99)
   cluster = cluster['cluster']
   #print(json.dumps(cluster,indent=2))
@@ -325,9 +312,9 @@ def delete_cluster(cluster_name):
   eks = boto3.client('eks', region_name=region)
   try:
     cluster = eks.delete_cluster(clusterName=cluster_name)
-  except Exception as e:
+  except Exception as exception:
     #logging all the others as warning
-    logging.critical("Failed. {}".format(e))
+    logging.critical("Failed. %s", format(exception))
     exit(99)
   cluster = cluster['cluster']
   print("Deleting cluster %s (Status=%s)" % (cluster['clusterName'], cluster['status']))
@@ -340,13 +327,14 @@ def main():
                       dest="region",
                       help="AWS Region",
                       default=os.environ.get(
-                          'KUBECTL_PLUGINS_LOCAL_FLAG_DESIRED_MASTER_VERSION', 
+                          'KUBECTL_PLUGINS_LOCAL_FLAG_DESIRED_MASTER_VERSION',
                           "us-west-2"))
   subparsers = parser.add_subparsers(title="Available commands", dest='cmd')
   ## List Clusters
   parser_list = subparsers.add_parser('list', help="Show Available Clusters")
   parser_list.set_defaults(func=list_cluster)
 
+  parser_help = subparsers.add_parser('help', help="Show Help")
   ## Create a EKS Cluster
   parser_create = subparsers.add_parser('create', help="Create EKS Cluster")
   parser_create.add_argument('--cluster-name',
@@ -380,7 +368,7 @@ def main():
   parser_describe.set_defaults(func=describe_cluster)
 
   ## Delete a EKS Cluster
-  parser_delete = subparsers.add_parser('delete', help="Describe an EKS Cluster")
+  parser_delete = subparsers.add_parser('delete', help="Delete an EKS Cluster")
   parser_delete.add_argument('--cluster-name', dest='clusterName',
                              default=os.environ.get(
                                  'KUBECTL_PLUGINS_LOCAL_FLAG_CLUSTER_NAME', None))
@@ -388,20 +376,26 @@ def main():
   ## Generate EKS Cluster Config
   parser_genconf = subparsers.add_parser('generate-config', help="Create kubeconfig for EKS Cluster")
   parser_genconf.add_argument('--cluster-name', dest='clusterName',
-                             default=os.environ.get(
-                                 'KUBECTL_PLUGINS_LOCAL_FLAG_CLUSTER_NAME', None))
+                              default=os.environ.get(
+                                  'KUBECTL_PLUGINS_LOCAL_FLAG_CLUSTER_NAME', None))
 
   args = parser.parse_args()
   region = args.region
   #parser.print_help()
   if args.cmd == "list":
     args.func()
+  elif args.cmd == "help":
+    parser.print_help()
   elif args.cmd == "create":
     create_cluster(clusterName=args.clusterName,
                    subnets=args.subnets,
                    securityGroups=args.securityGroups,
                    roleArn=args.roleArn)
   elif args.cmd == "describe":
+    if args.clusterName == '':
+      logging.critical('No Cluster Name Specified, Exiting....')
+      parser_describe.print_help()
+      exit()
     args.func(args.clusterName, args.detail)
   elif args.cmd == "delete":
     delete_cluster(cluster_name=args.clusterName)

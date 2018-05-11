@@ -18,64 +18,73 @@ longDesc: |
 
 example: kubectl plugin eks-cluster --help
 
-command: ./eks.sh
+command: "./eks.py help"
 
 tree:
+  - name: help
+    shortDesc: help
+    command: "./eks.py help"
   - name: create
     shortDesc: create
-    command: ./eks-create.sh
+    command: "./eks.py create"
     flags:
       - name: region
         desc: the region where to operate
         defValue: us-west-2
       - name: cluster-name
         desc: name of the cluster
-      - name: subnet-ids
+      - name: subnets
         desc: space separated list of subnet ids
-      - name: security-group-ids
+        defValue: auto
+      - name: security-groups
         desc: space separated list of security group ids
-      - name: service-role-arn
+        defValue: auto
+      - name: role-arn
         desc: arn of the service role
+        defValue: auto
   - name: delete
     shortDesc: delete
-    command: ./eks-delete.sh
+    command: "./eks.py delete"
     flags:
-      - name: region
-        desc: the region where to operate
       - name: cluster-name
         desc: the region where to operate
-      - name: im-insane
-        desc: are you sure you want to run this???
   - name: list
     shortDesc: list
-    command: ./eks-list.sh
+    command: "./eks.py list"
     flags:
       - name: region
         desc: the region where to operate
         defValue: us-west-2
   - name: describe
     shortDesc: describe
-    command: ./eks-describe.sh
+    command: "./eks.py describe"
     flags:
       - name: region
         desc: the region where to operate
         defValue: us-west-2
       - name: cluster-name
         desc: name of the cluster
-        defValue: demo
       - name: detail
         desc: produce more detailed output
         defValue: "no"
-  - name: genconf
+  - name: generate-config
     shortDesc: show configuration file
-    command: ./eks-genconf.sh
+    command: "./eks.py generate-config"
     flags:
       - name: region
         desc: the region where to operate
         defValue: us-west-2
       - name: cluster-name
         desc: name of the cluster
-        defValue: demo
+  - name: genconf
+    shortDesc: show configuration file
+    command: "./eks.py generate-config"
+    flags:
+      - name: region
+        desc: the region where to operate
+        defValue: us-west-2
+      - name: cluster-name
+        desc: name of the cluster
   - name: nodes
     shortDesc: List Public Ip Of Internal Nodes
     command: ./eks-getnodes.sh
