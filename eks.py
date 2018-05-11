@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 #
 """
 EKS Plugin for KubeCtl
@@ -10,27 +10,28 @@ THIS IS A POC  IS NOT AT ALL FINISHED!!!!!!!!!
 
 import os
 import logging
-#import json
-#import base64
-#import tempfile
+import argparse
 import subprocess
 import yaml
 import boto3
 import jmespath
-#import kubeconfig
-
-FORMAT = "%(levelname)s (%(lineno)d): %(message)s"
-logging.basicConfig(format=FORMAT)
-
-def getRegion():
-  global region
-  region = os.getenv('KUBECTL_PLUGINS_LOCAL_FLAG_REGION')
-  if not region:
-    logging.warning("No region specified asusming default us-west-2")
-    region = 'us-west-2'
-  #Set the KUBECTL_PLUGINS_LOCAL_FLAG_REGION to the value of region
-  os.environ['KUBECTL_PLUGINS_LOCAL_FLAG_REGION'] = region
-  return region
+from botocore.exceptions import ClientError, ParamValidationError#, ResourceNotFoundException
+import botocore.errorfactory
+global region
+FORMAT = "%(levelname)s (Line: %(lineno)04d): %(message)s"
+logging.basicConfig(format=FORMAT, level=logging.DEBUG)
+#logging.basicConfig(level=logging.DEBUG)
+logging.getLogger('boto3').setLevel(logging.INFO)
+logging.getLogger('botocore').setLevel(logging.CRITICAL)
+logging.getLogger('requests').setLevel(logging.INFO)
+# def getRegion(region='us-west-2'):
+#   if os.getenv('KUBECTL_PLUGINS_LOCAL_FLAG_REGION'):
+#     region = os.getenv('KUBECTL_PLUGINS_LOCAL_FLAG_REGION')
+#   else:
+#     logging.info("Using default us-west-2 region")
+#   #Set the KUBECTL_PLUGINS_LOCAL_FLAG_REGION to the value of region
+#   os.environ['KUBECTL_PLUGINS_LOCAL_FLAG_REGION'] = region
+#   return region
 
 def getclusterName():
   """
@@ -92,41 +93,71 @@ def getSubnets(clusterName):
     subnets.append(sn['SubnetId'])
   return subnets
 
-"""
-Search for the EKS role, by looking at all roles where service=eks.amazonaws.com and
-return the first one
-"""
+
 def getEksRole():
+  """
+  Search for the EKS role, by looking at all roles where service=eks.amazonaws.com and
+  return the first one
+  """
   iam = boto3.client('iam')
   roles = iam.list_roles()
+  logging.debug('Searching for EKS Role')
   eks = jmespath.search("Roles[?AssumeRolePolicyDocument.Statement[?Principal.Service==`eks.amazonaws.com`]]| [0]| Arn", roles)
+  logging.debug('EKS Role: %s', eks)
   return eks
 
-def create_cluster(clusterName):
+def create_cluster(clusterName, subnets, securityGroups, roleArn):
   """
   Create the cluster by finding the Security Groups,Subnet and EKS Role
   This assume you have already created the requiered CloudFomration
   Templates needed for EKS.
   docs/eks/latest/userguide/getting-started.html
   """
-  subnets = getSubnets(clusterName)
-  secgroups = getSecurityGroups(clusterName)
-  eksrole = getEksRole()
-  if not subnets:
-    print('No Subnet Discovered')
-  if not secgroups:
-    print('No Security Group Discovered')
-  if not eksrole:
-    print('No EKS Role discovered')
+  error_code = 0
+  if subnets == "auto":
+    logging.debug('using auto selection of subnets')
+    subnets = getSubnets(clusterName)
+  else:
+    logging.debug('Using command parameters subnets')
+    subnets = subnets.split(',')
 
-  print(subnets, " ", secgroups, " ", eksrole)
+  if securityGroups == "auto":
+    securityGroups = getSecurityGroups(clusterName)
+  else:
+    securityGroups = securityGroups.split(',')
+  if roleArn == "auto":
+    roleArn = getEksRole()
+  else:
+    roleArn = roleArn
+  if not subnets:
+    logging.error('No Subnet Discovered')
+    error_code = 1
+  if not securityGroups:
+    logging.error('No Security Group Discovered')
+    error_code = 1
+  if not roleArn:
+    logging.error('No EKS Role discovered')
+    error_code = 1
+
+  if error_code != 0:
+    logging.critical('Error creating the cluster, some parameters are missing')
+    exit(1)
+
+  logging.debug('Subnets        : %s', subnets)
+  logging.debug('Security Groups: %s', securityGroups)
+  print(subnets, " ", securityGroups, " ", roleArn)
   eks = boto3.client('eks', region_name=region)
-  status = eks.create_cluster(clusterName=clusterName,
-                              roleArn=eksrole,
+  try:
+    status = eks.create_cluster(clusterName=clusterName,
+                              roleArn=roleArn,
                               subnets=subnets,
-                              securityGroups=secgroups)
-  print(status)
-  return status
+                              securityGroups=securityGroups)
+  except Exception as e:
+    #logging all the others as warning
+    logging.critical("Failed. {}".format(e))
+    exit(99)
+  print(status['cluster'])
+  return status['cluster']
 
 def describe_cluster(clusterName, verbose='yes', output=True):
   """
@@ -135,20 +166,25 @@ def describe_cluster(clusterName, verbose='yes', output=True):
   Verbose can be 'no','yes' or 'cert'
   """
   eks = boto3.client('eks', region_name=region)
-  cluster = eks.describe_cluster(clusterName=clusterName)
+  try:
+    cluster = eks.describe_cluster(clusterName=clusterName)
+  except Exception as e:
+    #logging all the others as warning
+    logging.critical("Failed. {}".format(e))
+    exit(99)
   cluster = cluster['cluster']
   #print(json.dumps(cluster,indent=2))
   if output:
-    logging.info("Cluster name......: %s", cluster['clusterName'])
-    logging.info("Master Version....: %s", cluster['desiredMasterVersion'])
-    logging.info("Master Endpoint...: %s", cluster['masterEndpoint'])
-    logging.info("Cluster Status....: %s", cluster['status'])
+    print("Cluster name......: %s" % cluster['clusterName'])
+    print("Master Version....: %s" % cluster['desiredMasterVersion'])
+    print("Master Endpoint...: %s" % cluster['masterEndpoint'])
+    print("Cluster Status....: %s" % cluster['status'])
     if verbose != 'no':
-      logging.info("Subnets...........: %s", ' '.join(cluster['subnets']))
-      logging.info("Security Groups...: %s", ' '.join(cluster['securityGroups']))
-      logging.info("EKS Role Arn......: %s", cluster['roleArn'])
+      print("Subnets...........: %s" % ','.join(cluster['subnets']))
+      print("Security Groups...: %s" % ','.join(cluster['securityGroups']))
+      print("EKS Role Arn......: %s" % cluster['roleArn'])
     if verbose == 'cert':
-      logging.info("Certificate Data..: %s", cluster['certificateAuthority']['data'])
+      print("Certificate Data..: %s" % cluster['certificateAuthority']['data'])
   return cluster
 
 def read_kubectlconfig():
@@ -185,7 +221,7 @@ def generate_cluster_config(kconfig):
       index = index + 1
       #logging.warn(cluster)
   else:
-    logging.debug("No Such Cluster, Creating it")
+    logging.debug("No Such Cluster on the kubeconfig, Configuring...")
     clusterdata = {'certificate-authority-data': clusterinfo['certificateAuthority']['data'],
                    'server': clusterinfo['masterEndpoint']}
     cluster = {'name': clusterName, 'cluster': clusterdata}
@@ -214,9 +250,9 @@ def generate_context_config(kconfig):
         index = index + 1
       logging.debug(context)
   else:
-    logging.warning("No Such Cluster, Creating it")
+    logging.warning("No Such context configured, Configuring...")
     context = {'name': contextName, 'context': {'cluster': clusterName, 'user': username}}
-    logging.info("Cluster: %s", context)
+    #logging.info("Cluster: %s", context)
     kconfig['contexts'].append(dict(context))
   return kconfig
 
@@ -244,11 +280,6 @@ def generate_users_config(kconfig):
       index = index + 1
     #logging.debug (kconfig['users'])
   else:
-    #logging.info ("No such User")
-    # userblock="""name: """+ username + """,user: exec: apiVersion: client.authentication.k8s.io/v1alpha1,args: [token, -i, """ + clusterName + """],command: heptio-authenticator-aws,env: None"""
-    # print(userblock)
-    #pos = int(len(kconfig['users']))
-    #logging.info("Position: %s"%pos)
     args = ["token", "-i", clusterName]
     execparms = {'apiVersion':'client.authentication.k8s.io/v1alpha1',
                  'args': args, 'command': 'heptio-authenticator-aws',
@@ -260,7 +291,6 @@ def generate_users_config(kconfig):
     #print(yaml.dump(kconfig))
 
   return kconfig
-
 def generate_kubeconfig(clusterName):
   """
   Generate the kubeconfig file, currently will read the configuration from
@@ -286,9 +316,101 @@ def generate_kubeconfig(clusterName):
   with open(kubeaws, mode='w') as kubecfg:
     kubecfg.write(yaml.dump(kconfig, indent=2, default_flow_style=False))
   kubecfg.close()
+  logging.info("kubeconfig file created on ~/.kube/config-aws")
 
+def delete_cluster(cluster_name):
+  """
+  This function calls delete_cluster to remove the clusterName
+  """
+  eks = boto3.client('eks', region_name=region)
+  try:
+    cluster = eks.delete_cluster(clusterName=cluster_name)
+  except Exception as e:
+    #logging all the others as warning
+    logging.critical("Failed. {}".format(e))
+    exit(99)
+  cluster = cluster['cluster']
+  print("Deleting cluster %s (Status=%s)" % (cluster['clusterName'], cluster['status']))
+  return cluster
 
 def main():
+  global region
+  parser = argparse.ArgumentParser()
+  parser.add_argument("-r", "--region",
+                      dest="region",
+                      help="AWS Region",
+                      default=os.environ.get(
+                          'KUBECTL_PLUGINS_LOCAL_FLAG_DESIRED_MASTER_VERSION', 
+                          "us-west-2"))
+  subparsers = parser.add_subparsers(title="Available commands", dest='cmd')
+  ## List Clusters
+  parser_list = subparsers.add_parser('list', help="Show Available Clusters")
+  parser_list.set_defaults(func=list_cluster)
+
+  ## Create a EKS Cluster
+  parser_create = subparsers.add_parser('create', help="Create EKS Cluster")
+  parser_create.add_argument('--cluster-name',
+                             dest='clusterName',
+                             default=os.environ.get(
+                                 'KUBECTL_PLUGINS_LOCAL_FLAG_CLUSTER_NAME', None))
+  parser_create.add_argument('--subnets',
+                             dest='subnets',
+                             default=os.environ.get(
+                                 'KUBECTL_PLUGINS_LOCAL_FLAG_SUBNETS', None))
+  parser_create.add_argument('--security-groups',
+                             dest='securityGroups',
+                             default=os.environ.get(
+                                 'KUBECTL_PLUGINS_LOCAL_FLAG_SECURITY_GROUPS', None))
+  parser_create.add_argument('--role-arn',
+                             dest='roleArn',
+                             default=os.environ.get(
+                                 'KUBECTL_PLUGINS_LOCAL_FLAG_ROLE_ARN', None))
+  parser_create.add_argument('--desired-master-version',
+                             default=os.environ.get(
+                                 'KUBECTL_PLUGINS_LOCAL_FLAG_DESIRED_MASTER_VERSION', None))
+  ## Describe a EKS Cluster
+  parser_describe = subparsers.add_parser('describe', help="Describe an EKS Cluster")
+  parser_describe.add_argument('--cluster-name', dest='clusterName',
+                               default=os.environ.get(
+                                   'KUBECTL_PLUGINS_LOCAL_FLAG_CLUSTER_NAME', None))
+  parser_describe.add_argument('--detail',
+                               choices=['no', 'yes', 'cert'],
+                               default=os.environ.get(
+                                   'KUBECTL_PLUGINS_LOCAL_FLAG_DETAIL', 'no'))
+  parser_describe.set_defaults(func=describe_cluster)
+
+  ## Delete a EKS Cluster
+  parser_delete = subparsers.add_parser('delete', help="Describe an EKS Cluster")
+  parser_delete.add_argument('--cluster-name', dest='clusterName',
+                             default=os.environ.get(
+                                 'KUBECTL_PLUGINS_LOCAL_FLAG_CLUSTER_NAME', None))
+
+  ## Generate EKS Cluster Config
+  parser_genconf = subparsers.add_parser('generate-config', help="Create kubeconfig for EKS Cluster")
+  parser_genconf.add_argument('--cluster-name', dest='clusterName',
+                             default=os.environ.get(
+                                 'KUBECTL_PLUGINS_LOCAL_FLAG_CLUSTER_NAME', None))
+
+  args = parser.parse_args()
+  region = args.region
+  #parser.print_help()
+  if args.cmd == "list":
+    args.func()
+  elif args.cmd == "create":
+    create_cluster(clusterName=args.clusterName,
+                   subnets=args.subnets,
+                   securityGroups=args.securityGroups,
+                   roleArn=args.roleArn)
+  elif args.cmd == "describe":
+    args.func(args.clusterName, args.detail)
+  elif args.cmd == "delete":
+    delete_cluster(cluster_name=args.clusterName)
+  elif args.cmd == "generate-config":
+    generate_kubeconfig(args.clusterName)
+  #print (args)
+  #args_list = parser_list.parse_args()
+  #print (args_list)
+  exit(0)
   #print(getRegion())
   #print(getSecurityGroups(clusterName='demo1',region=region))
   #print(getSubnets('demo1'))
@@ -297,9 +419,9 @@ def main():
   # region=getregion()
   # #help()
   #list_cluster()
-  create_cluster('demo1')
+  #create_cluster('demo1')
   generate_kubeconfig(clusterName='demo2')
 
 if __name__ == '__main__':
-  getRegion()
+  #getRegion()
   main()
