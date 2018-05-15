@@ -17,7 +17,7 @@ import boto3
 import jmespath
 #from botocore.exceptions import ClientError, ParamValidationError#, ResourceNotFoundException
 #import botocore.errorfactory
-
+global REGION
 FORMAT = "%(levelname)s (Line: %(lineno)04d): %(message)s"
 logging.basicConfig(format=FORMAT, level=logging.DEBUG)
 #logging.basicConfig(level=logging.DEBUG)
@@ -175,9 +175,8 @@ def describe_cluster(cluster_name, verbose='yes', output=True):
       print("EKS Role Arn......: %s" % cluster['roleArn'])
     if verbose == 'cert' and cluster['status'] == 'ACTIVE':
       print("Certificate Data..: %s" % cluster['certificateAuthority']['data'])
-    elif verbose =='cert':
+    elif verbose == 'cert':
       print("Certificate Data..: CLUSTER_IN_CREATING_STATE")
-      
   return cluster
 
 def read_kubectlconfig():
@@ -193,7 +192,6 @@ def read_kubectlconfig():
   config = yaml.load(output)
   conf.terminate()
   return config
-
 
 def generate_cluster_config(kconfig):
   """
@@ -327,8 +325,21 @@ def delete_cluster(cluster_name):
   return cluster
 
 def tag_subnets(cluster_name, subnet, shared=True, remove=False):
-  print ("lalalal")
-  
+  print("lalalal")
+  if shared:
+    shared = 'shared'
+  else:
+    shared = 'owned'
+  ec2 = boto3.client('ec2', region_name=REGION)
+  if remove:
+    ec2.delete_tags(Resources=[subnet], 
+                    Tags=[{'Key':'kubernetes.io/cluster/' + cluster_name, 
+                    'Value':shared}])
+  else:
+    ec2.create_tags(Resources=[subnet], 
+                    Tags=[{'Key':'kubernetes.io/cluster/' + cluster_name, 
+                    'Value':shared}])
+
 def main():
   """
   Main function
@@ -348,6 +359,7 @@ def main():
   parser_list.set_defaults(func=list_cluster)
 
   parser_help = subparsers.add_parser('help', help="Show Help")
+
   ## Create a EKS Cluster
   parser_create = subparsers.add_parser('create', help="Create EKS Cluster")
   parser_create.add_argument('--cluster-name',
@@ -393,7 +405,14 @@ def main():
   parser_genconf.add_argument('--cluster-name', dest='clusterName',
                               default=os.environ.get(
                                   'KUBECTL_PLUGINS_LOCAL_FLAG_CLUSTER_NAME', None))
-
+  ## General AWS Commands that are handy
+  parser_aws = subparsers.add_parser('aws', help="Command to manage the AWS Infrastructure")
+  parser_aws.add_argument('--cluster-name', dest='clusterName',
+                          default=os.environ.get(
+                              'KUBECTL_PLUGINS_LOCAL_FLAG_CLUSTER_NAME', None))
+  parser_aws.add_argument('--subnet', dest='subnet',
+                          default=os.environ.get('KUBECTL_PLUGINS_LOCAL_FLAG_SUBNET', None))
+  parser_aws.add_argument('--remove', dest='remove', default=False, action='store_true')
   args = parser.parse_args()
   print(args)
   REGION = args.REGION
@@ -417,6 +436,16 @@ def main():
     delete_cluster(cluster_name=args.clusterName)
   elif args.cmd == "generate-config":
     generate_kubeconfig(args.clusterName)
+  elif args.cmd == "aws":
+    print(args)
+    if 'subnet' in args:
+      if 'KUBECTL_PLUGINS_LOCAL_FLAG_REMOVE' in os.environ:
+        args.remove = True
+      if not args.subnet:
+        logging.critical('No Subnet passed')
+        exit()
+      print(args)
+      tag_subnets(cluster_name=args.clusterName, subnet=args.subnet, remove=args.remove)
 
 
 if __name__ == '__main__':
