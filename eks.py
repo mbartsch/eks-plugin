@@ -53,6 +53,7 @@ def list_cluster():
   print("Available Clusters")
   for cluster in clusters['clusters']:
     print("Name: %s" % cluster)
+  return clusters['clusters']
 
 def get_security_groups(cluster_name):
   """
@@ -290,7 +291,9 @@ def generate_kubeconfig(cluster_name):
 
   """
   from pathlib import Path
-
+  if (cluster_name == ""):
+    logging.error('No Cluster Name Provided')
+    exit()
   clusterinfo = describe_cluster(cluster_name, output=False)
   kconfig = read_kubectlconfig()
   kconfig['clusterinfo'] = dict(clusterinfo)
