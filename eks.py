@@ -89,7 +89,8 @@ def get_role_arn():
   iam = boto3.client('iam')
   roles = iam.list_roles()
   logging.debug('Searching for EKS Role')
-  eks = jmespath.search("Roles[?AssumeRolePolicyDocument.Statement[?Principal.Service==`eks.amazonaws.com`]]| [0]| Arn", roles)
+  eks = jmespath.search("Roles[?AssumeRolePolicyDocument.Statement[?Principal.Service"
+                        + "==`eks.amazonaws.com`]]| [0]| Arn", roles)
   logging.debug('EKS Role: %s', eks)
   return eks
 
@@ -324,21 +325,25 @@ def delete_cluster(cluster_name):
   print("Deleting cluster %s (Status=%s)" % (cluster['clusterName'], cluster['status']))
   return cluster
 
-def tag_subnets(cluster_name, subnet, shared=True, remove=False):
-  print("lalalal")
+
+def tag_resources(cluster_name, resource, shared=True, remove=False):
+  """
+  This function will tag the given subnet with the kubernetes.io/cluster/cluster
+  with a value of shared by default unless shared is False when calling the function
+  """
   if shared:
     shared = 'shared'
   else:
     shared = 'owned'
   ec2 = boto3.client('ec2', region_name=REGION)
   if remove:
-    ec2.delete_tags(Resources=[subnet], 
-                    Tags=[{'Key':'kubernetes.io/cluster/' + cluster_name, 
-                    'Value':shared}])
+    ec2.delete_tags(Resources=[resource],
+                    Tags=[{'Key':'kubernetes.io/cluster/' + cluster_name,
+                           'Value':shared}])
   else:
-    ec2.create_tags(Resources=[subnet], 
-                    Tags=[{'Key':'kubernetes.io/cluster/' + cluster_name, 
-                    'Value':shared}])
+    ec2.create_tags(Resources=[resource],
+                    Tags=[{'Key':'kubernetes.io/cluster/' + cluster_name,
+                           'Value':shared}])
 
 def main():
   """
@@ -406,12 +411,12 @@ def main():
                               default=os.environ.get(
                                   'KUBECTL_PLUGINS_LOCAL_FLAG_CLUSTER_NAME', None))
   ## General AWS Commands that are handy
-  parser_aws = subparsers.add_parser('aws', help="Command to manage the AWS Infrastructure")
+  parser_aws = subparsers.add_parser('aws-tag', help="Command to manage the AWS Infrastructure")
   parser_aws.add_argument('--cluster-name', dest='clusterName',
                           default=os.environ.get(
                               'KUBECTL_PLUGINS_LOCAL_FLAG_CLUSTER_NAME', None))
-  parser_aws.add_argument('--subnet', dest='subnet',
-                          default=os.environ.get('KUBECTL_PLUGINS_LOCAL_FLAG_SUBNET', None))
+  parser_aws.add_argument('--resource', dest='resource',
+                          default=os.environ.get('KUBECTL_PLUGINS_LOCAL_FLAG_RESOURCE', None))
   parser_aws.add_argument('--remove', dest='remove', default=False, action='store_true')
   args = parser.parse_args()
   print(args)
@@ -436,16 +441,15 @@ def main():
     delete_cluster(cluster_name=args.clusterName)
   elif args.cmd == "generate-config":
     generate_kubeconfig(args.clusterName)
-  elif args.cmd == "aws":
+  elif args.cmd == "aws-tag":
     print(args)
-    if 'subnet' in args:
-      if 'KUBECTL_PLUGINS_LOCAL_FLAG_REMOVE' in os.environ:
-        args.remove = True
-      if not args.subnet:
-        logging.critical('No Subnet passed')
-        exit()
-      print(args)
-      tag_subnets(cluster_name=args.clusterName, subnet=args.subnet, remove=args.remove)
+    if os.environ.get('KUBECTL_PLUGINS_LOCAL_FLAG_REMOVE','') != '':
+      args.remove = True
+    if not args.resource:
+      logging.critical('No Resource passed')
+      exit()
+    print(args)
+    tag_resources(cluster_name=args.clusterName, resource=args.resource, remove=args.remove)
 
 
 if __name__ == '__main__':

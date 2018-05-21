@@ -85,17 +85,17 @@ tree:
         defValue: us-west-2
       - name: cluster-name
         desc: name of the cluster
-  - name: aws
+  - name: aws-tag
     shortDesc: Manage some AWS Resources
-    command: "./eks.py aws"
+    command: "./eks.py aws-tag"
     flags:
       - name: region
         desc: the region
         defValue: us-west-2
       - name: cluster-name
         desc: name of the cluster
-      - name: subnet
-        desc: subnet to modify
+      - name: resource
+        desc: resource to modify
       - name: remove
         desc: remove the K8S tag from resource
   - name: nodes
