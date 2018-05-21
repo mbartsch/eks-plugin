@@ -297,7 +297,7 @@ def generate_kubeconfig(cluster_name):
 
   """
   from pathlib import Path
-  if (cluster_name == ""):
+  if cluster_name == "":
     logging.error('No Cluster Name Provided')
     exit()
   clusterinfo = describe_cluster(cluster_name, output=False)
@@ -451,7 +451,7 @@ def main():
     generate_kubeconfig(args.clusterName)
   elif args.cmd == "aws-tag":
     print(args)
-    if os.environ.get('KUBECTL_PLUGINS_LOCAL_FLAG_REMOVE','') != '':
+    if os.environ.get('KUBECTL_PLUGINS_LOCAL_FLAG_REMOVE', '') != '':
       args.remove = True
     if not args.resource:
       logging.critical('No Resource passed')
