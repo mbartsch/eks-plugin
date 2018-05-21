@@ -8,19 +8,24 @@ THIS IS A POC  IS NOT AT ALL FINISHED!!!!!!!!!
 
 """
 
-import os
-import logging
 import argparse
+import logging
+import os
 import subprocess
-import yaml
+
 import boto3
 import jmespath
+import yaml
+
 #from botocore.exceptions import ClientError, ParamValidationError#, ResourceNotFoundException
 #import botocore.errorfactory
 global REGION
 FORMAT = "%(levelname)s (Line: %(lineno)04d): %(message)s"
+FORMAT = "%(asctime)s - %(name)s - (Line: %(lineno)04d) - %(levelname)s - %(message)s"
 logging.basicConfig(format=FORMAT, level=logging.DEBUG)
+
 #logging.basicConfig(level=logging.DEBUG)
+logging.getLogger(__name__)
 logging.getLogger('boto3').setLevel(logging.INFO)
 logging.getLogger('botocore').setLevel(logging.CRITICAL)
 logging.getLogger('requests').setLevel(logging.INFO)
@@ -53,6 +58,7 @@ def list_cluster():
   print("Available Clusters")
   for cluster in clusters['clusters']:
     print("Name: %s" % cluster)
+  return clusters['clusters']
 
 def get_security_groups(cluster_name):
   """
@@ -291,7 +297,9 @@ def generate_kubeconfig(cluster_name):
 
   """
   from pathlib import Path
-
+  if (cluster_name == ""):
+    logging.error('No Cluster Name Provided')
+    exit()
   clusterinfo = describe_cluster(cluster_name, output=False)
   kconfig = read_kubectlconfig()
   kconfig['clusterinfo'] = dict(clusterinfo)
@@ -364,7 +372,7 @@ def main():
   parser_list.set_defaults(func=list_cluster)
 
   parser_help = subparsers.add_parser('help', help="Show Help")
-
+  parser_help.set_defaults()
   ## Create a EKS Cluster
   parser_create = subparsers.add_parser('create', help="Create EKS Cluster")
   parser_create.add_argument('--cluster-name',
