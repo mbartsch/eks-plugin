@@ -174,6 +174,8 @@ def describe_cluster(cluster_name, verbose='yes', output=True):
     print("Cluster Status....: %s" % cluster['status'])
     if cluster['status'] == 'ACTIVE':
       print("Master Endpoint...: %s" % cluster['masterEndpoint'])
+    elif cluster['status'] == 'DELETING':
+      print("Master Endopoint..: CLUSTER_IN_DELETING_STATE")
     else:
       print("Master Endopoint..: CLUSTER_IN_CREATING_STATE")
     if verbose != 'no':
