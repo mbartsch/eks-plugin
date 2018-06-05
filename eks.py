@@ -178,6 +178,7 @@ def describe_cluster(cluster_name, verbose='yes', output=True):
     else:
       print("Master Endpoint..: CLUSTER_IN_CREATING_STATE")
     if verbose != 'no':
+      print("Created At........: %s" % cluster['createdAt'])
       print("Subnets...........: %s" % ','.join(cluster['resourcesVpcConfig']['subnetIds']))
       print("Security Groups...: %s" % ','.join(cluster['resourcesVpcConfig']['securityGroupIds']))
       print("VPC ID............: %s" % cluster['resourcesVpcConfig']['vpcId'])
