@@ -144,8 +144,7 @@ def create_cluster(cluster_name, subnets, security_groups, role_arn):
   try:
     status = eks.create_cluster(name=cluster_name,
                                 roleArn=role_arn,
-                                subnets=subnets,
-                                securityGroups=security_groups)
+                                resourcesVpcConfig={'subnetIds': subnets, 'securityGroupIds': security_groups})
   except Exception as exception:
     #logging all the others as warning
     logging.critical("Failed. %s", format(exception))
