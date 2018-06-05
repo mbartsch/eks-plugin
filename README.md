@@ -31,12 +31,12 @@ kubectl plugin eks [list]
 
 Describe Cluster
 ```
-kubectl plugin eks describe --cluster-name=demo
+kubectl plugin eks describe --name=demo
 ```
 
 Delete a cluster
 ```
-kubectl plugin eks delete --cluster-name=demo
+kubectl plugin eks delete --name=demo
 ```
 
 Usage help
@@ -50,7 +50,7 @@ Create a Cluster
   * The Discover process look for a IAM Profile that has the trust relationship with eks.amazonaws.com
 
 ```
-kubectl plugin eks create --cluster-name=demo
+kubectl plugin eks create --name=demo
 ```
 
 ## Todo
