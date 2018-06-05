@@ -7,7 +7,7 @@ This plugin allows to create, delete and display the information for a EKS Clust
 * jq
 
 
-# THIS IS THE DEVEL VERSION INFO BELOW IS NOT ACCURATE
+# THIS IS THE DEVEL VERSION INFO BELOW MAY NOT BE ACCURATE
 
 ## Installation
 
@@ -55,7 +55,6 @@ kubectl plugin eks create --name=demo
 
 ## Todo
 - [X] Move it to use 'trees' instead of a single command
-- [ ] error handling
-- [ ] auto configure $HOME/.kube/config
-- [ ] Write the plugin in python to be more portable
-    - [ ] boto3 issue is blocking this problem.
+- [X] error handling
+- [X] auto configure $HOME/.kube/config-aws
+- [X] Write the plugin in python to be more portable
