@@ -9,10 +9,10 @@ longDesc: |
 
   kubernetes.io/cluster/cluster-name
 
-  kubectl plugin eks create --cluster-name cluster-name
+  kubectl plugin eks create --name cluster-name
   kubectl plugin eks list
-  kubectl plugin eks describe --cluster-name cluster-name
-  kubectl plugin eks create --cluster-name cluster-name
+  kubectl plugin eks describe --name cluster-name
+  kubectl plugin eks create --name cluster-name
   kubectl plugin eks showconfig
 
 
@@ -31,7 +31,7 @@ tree:
       - name: region
         desc: the region where to operate
         defValue: us-west-2
-      - name: cluster-name
+      - name: name
         desc: name of the cluster
       - name: subnets
         desc: space separated list of subnet ids
@@ -46,7 +46,7 @@ tree:
     shortDesc: delete
     command: "./eks.py delete"
     flags:
-      - name: cluster-name
+      - name: name
         desc: the region where to operate
   - name: list
     shortDesc: list
@@ -62,7 +62,7 @@ tree:
       - name: region
         desc: the region where to operate
         defValue: us-west-2
-      - name: cluster-name
+      - name: name
         desc: name of the cluster
       - name: detail
         desc: produce more detailed output
@@ -74,7 +74,7 @@ tree:
       - name: region
         desc: the region where to operate
         defValue: us-west-2
-      - name: cluster-name
+      - name: name
         desc: name of the cluster
   - name: genconf
     shortDesc: show configuration file
@@ -83,7 +83,7 @@ tree:
       - name: region
         desc: the region where to operate
         defValue: us-west-2
-      - name: cluster-name
+      - name: name
         desc: name of the cluster
   - name: aws-tag
     shortDesc: Manage some AWS Resources
@@ -92,7 +92,7 @@ tree:
       - name: region
         desc: the region
         defValue: us-west-2
-      - name: cluster-name
+      - name: name
         desc: name of the cluster
       - name: resource
         desc: resource to modify
@@ -121,7 +121,7 @@ tree:
       - name: region
         desc: the region where to operate
         defValue: us-west-2
-      - name: cluster-name
+      - name: name
         desc: name of the cluster
         defValue: demo
       - name: asg-name

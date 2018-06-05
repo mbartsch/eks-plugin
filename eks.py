@@ -40,10 +40,10 @@ logging.getLogger('requests').setLevel(logging.INFO)
 
 def get_cluster_name():
   """
-  This will read the environment varible KUBECTL_PLUGINS_LOCAL_FLAG_CLUSTER_NAME
+  This will read the environment varible KUBECTL_PLUGINS_LOCAL_FLAG_NAME
   to use it as cluster name and return it
   """
-  cluster_name = os.getenv('KUBECTL_PLUGINS_LOCAL_FLAG_CLUSTER_NAME')
+  cluster_name = os.getenv('KUBECTL_PLUGINS_LOCAL_FLAG_NAME')
   if not cluster_name:
     logging.error("No cluster specified")
     #exit(2)
@@ -142,7 +142,7 @@ def create_cluster(cluster_name, subnets, security_groups, role_arn):
   print(subnets, " ", security_groups, " ", role_arn)
   eks = boto3.client('eks', region_name=REGION)
   try:
-    status = eks.create_cluster(clusterName=cluster_name,
+    status = eks.create_cluster(name=cluster_name,
                                 roleArn=role_arn,
                                 subnets=subnets,
                                 securityGroups=security_groups)
@@ -161,7 +161,7 @@ def describe_cluster(cluster_name, verbose='yes', output=True):
   """
   eks = boto3.client('eks', region_name=REGION)
   try:
-    cluster = eks.describe_cluster(clusterName=cluster_name)
+    cluster = eks.describe_cluster(name=cluster_name)
   except Exception as exception:
     #logging all the others as warning
     logging.critical("Failed. %s", format(exception))
@@ -169,18 +169,19 @@ def describe_cluster(cluster_name, verbose='yes', output=True):
   cluster = cluster['cluster']
   #print(json.dumps(cluster,indent=2))
   if output:
-    print("Cluster name......: %s" % cluster['clusterName'])
-    print("Master Version....: %s" % cluster['desiredMasterVersion'])
+    print("Cluster name......: %s" % cluster['name'])
+    print("Master Version....: %s" % cluster['version'])
     print("Cluster Status....: %s" % cluster['status'])
     if cluster['status'] == 'ACTIVE':
-      print("Master Endpoint...: %s" % cluster['masterEndpoint'])
+      print("Master Endpoint...: %s" % cluster['endpoint'])
     elif cluster['status'] == 'DELETING':
-      print("Master Endopoint..: CLUSTER_IN_DELETING_STATE")
+      print("Master Endpoint..: CLUSTER_IN_DELETING_STATE")
     else:
-      print("Master Endopoint..: CLUSTER_IN_CREATING_STATE")
+      print("Master Endpoint..: CLUSTER_IN_CREATING_STATE")
     if verbose != 'no':
-      print("Subnets...........: %s" % ','.join(cluster['subnets']))
-      print("Security Groups...: %s" % ','.join(cluster['securityGroups']))
+      print("Subnets...........: %s" % ','.join(cluster['resourcesVpcConfig']['subnetIds']))
+      print("Security Groups...: %s" % ','.join(cluster['resourcesVpcConfig']['securityGroupIds']))
+      print("VPC ID............: %s" % cluster['resourcesVpcConfig']['vpcId'])
       print("EKS Role Arn......: %s" % cluster['roleArn'])
     if verbose == 'cert' and cluster['status'] == 'ACTIVE':
       print("Certificate Data..: %s" % cluster['certificateAuthority']['data'])
@@ -206,7 +207,7 @@ def generate_cluster_config(kconfig):
   """
   Cluster Section
   """
-  cluster_name = kconfig['clusterName']
+  cluster_name = kconfig['name']
   cluster_info = kconfig['clusterinfo']
   clusters = [cluster for cluster in kconfig['clusters'] if cluster.get('name') == cluster_name]
   if clusters:
@@ -215,7 +216,7 @@ def generate_cluster_config(kconfig):
       if cluster['name'] == cluster_name:
         #logging.warn(yaml.dump(cluster,indent=2))
         logging.debug("Found Cluster Update it")
-        server = cluster_info['masterEndpoint']
+        server = cluster_info['endpoint']
         certauthdata = cluster_info['certificateAuthority']['data']
         cluster['cluster'] = {'certificate-authority-data': certauthdata, 'server': server}
       index = index + 1
@@ -223,7 +224,7 @@ def generate_cluster_config(kconfig):
   else:
     logging.debug("No Such Cluster on the kubeconfig, Configuring...")
     clusterdata = {'certificate-authority-data': cluster_info['certificateAuthority']['data'],
-                   'server': cluster_info['masterEndpoint']}
+                   'server': cluster_info['endpoint']}
     cluster = {'name': cluster_name, 'cluster': clusterdata}
     #logging.info("Cluster: %s" , cluster)
     kconfig['clusters'].append(dict(cluster))
@@ -234,7 +235,7 @@ def generate_context_config(kconfig):
   Context Definition
   """
   #print(kconfig)
-  cluster_name = kconfig['clusterName']
+  cluster_name = kconfig['name']
   #clusterinfo = kconfig['clusterinfo']
   context_name = "k8s-aws-" + cluster_name
   username = cluster_name + "-admin"
@@ -260,7 +261,7 @@ def generate_users_config(kconfig):
   """
   User section
   """
-  cluster_name = kconfig['clusterName']
+  cluster_name = kconfig['name']
   #clusterinfo = kconfig['clusterinfo']
   username = cluster_name + "-admin"
   userdata = [user for user in kconfig['users'] if user.get('name') == username]
@@ -305,13 +306,13 @@ def generate_kubeconfig(cluster_name):
   clusterinfo = describe_cluster(cluster_name, output=False)
   kconfig = read_kubectlconfig()
   kconfig['clusterinfo'] = dict(clusterinfo)
-  kconfig['clusterName'] = cluster_name
+  kconfig['name'] = cluster_name
   #print(yaml.dump(kconfig,indent=2,default_flow_style=False))
   kconfig = generate_cluster_config(kconfig)
   kconfig = generate_context_config(kconfig)
   kconfig = generate_users_config(kconfig)
   del kconfig['clusterinfo']
-  del kconfig['clusterName']
+  del kconfig['name']
   print(yaml.dump(kconfig, indent=2, default_flow_style=False))
   homedir = str(Path.home())
   kubeaws = homedir + "/.kube/config-aws"
@@ -322,17 +323,17 @@ def generate_kubeconfig(cluster_name):
 
 def delete_cluster(cluster_name):
   """
-  This function calls delete_cluster to remove the clusterName
+  This function calls delete_cluster to remove the name
   """
   eks = boto3.client('eks', region_name=REGION)
   try:
-    cluster = eks.delete_cluster(clusterName=cluster_name)
+    cluster = eks.delete_cluster(name=cluster_name)
   except Exception as exception:
     #logging all the others as warning
     logging.critical("Failed. %s", format(exception))
     exit(99)
   cluster = cluster['cluster']
-  print("Deleting cluster %s (Status=%s)" % (cluster['clusterName'], cluster['status']))
+  print("Deleting cluster %s (Status=%s)" % (cluster['name'], cluster['status']))
   return cluster
 
 
@@ -377,10 +378,10 @@ def main():
   parser_help.set_defaults()
   ## Create a EKS Cluster
   parser_create = subparsers.add_parser('create', help="Create EKS Cluster")
-  parser_create.add_argument('--cluster-name',
-                             dest='clusterName',
+  parser_create.add_argument('--name',
+                             dest='name',
                              default=os.environ.get(
-                                 'KUBECTL_PLUGINS_LOCAL_FLAG_CLUSTER_NAME', None))
+                                 'KUBECTL_PLUGINS_LOCAL_FLAG_NAME', None))
   parser_create.add_argument('--subnets',
                              dest='subnets',
                              default=os.environ.get(
@@ -398,9 +399,9 @@ def main():
                                  'KUBECTL_PLUGINS_LOCAL_FLAG_DESIRED_MASTER_VERSION', None))
   ## Describe a EKS Cluster
   parser_describe = subparsers.add_parser('describe', help="Describe an EKS Cluster")
-  parser_describe.add_argument('--cluster-name', dest='clusterName',
+  parser_describe.add_argument('--name', dest='name',
                                default=os.environ.get(
-                                   'KUBECTL_PLUGINS_LOCAL_FLAG_CLUSTER_NAME', None))
+                                   'KUBECTL_PLUGINS_LOCAL_FLAG_NAME', None))
   parser_describe.add_argument('--detail',
                                choices=['no', 'yes', 'cert'],
                                dest='detail',
@@ -410,21 +411,21 @@ def main():
 
   ## Delete a EKS Cluster
   parser_delete = subparsers.add_parser('delete', help="Delete an EKS Cluster")
-  parser_delete.add_argument('--cluster-name', dest='clusterName',
+  parser_delete.add_argument('--name', dest='name',
                              default=os.environ.get(
-                                 'KUBECTL_PLUGINS_LOCAL_FLAG_CLUSTER_NAME', None))
+                                 'KUBECTL_PLUGINS_LOCAL_FLAG_NAME', None))
 
   ## Generate EKS Cluster Config
   parser_genconf = subparsers.add_parser('generate-config',
                                          help="Create kubeconfig for EKS Cluster")
-  parser_genconf.add_argument('--cluster-name', dest='clusterName',
+  parser_genconf.add_argument('--name', dest='name',
                               default=os.environ.get(
-                                  'KUBECTL_PLUGINS_LOCAL_FLAG_CLUSTER_NAME', None))
+                                  'KUBECTL_PLUGINS_LOCAL_FLAG_NAME', None))
   ## General AWS Commands that are handy
   parser_aws = subparsers.add_parser('aws-tag', help="Command to manage the AWS Infrastructure")
-  parser_aws.add_argument('--cluster-name', dest='clusterName',
+  parser_aws.add_argument('--name', dest='name',
                           default=os.environ.get(
-                              'KUBECTL_PLUGINS_LOCAL_FLAG_CLUSTER_NAME', None))
+                              'KUBECTL_PLUGINS_LOCAL_FLAG_NAME', None))
   parser_aws.add_argument('--resource', dest='resource',
                           default=os.environ.get('KUBECTL_PLUGINS_LOCAL_FLAG_RESOURCE', None))
   parser_aws.add_argument('--remove', dest='remove', default=False, action='store_true')
@@ -437,20 +438,21 @@ def main():
   elif args.cmd == "help":
     parser.print_help()
   elif args.cmd == "create":
-    create_cluster(cluster_name=args.clusterName,
+    create_cluster(cluster_name=args.name,
                    subnets=args.subnets,
                    security_groups=args.securityGroups,
                    role_arn=args.roleArn)
   elif args.cmd == "describe":
-    if args.clusterName == '':
+    if args.name == '':
       logging.critical('No Cluster Name Specified, Exiting....')
       parser_describe.print_help()
       exit()
-    args.func(args.clusterName, args.detail)
+    print(args.name)
+    args.func(args.name, args.detail)
   elif args.cmd == "delete":
-    delete_cluster(cluster_name=args.clusterName)
+    delete_cluster(cluster_name=args.name)
   elif args.cmd == "generate-config":
-    generate_kubeconfig(args.clusterName)
+    generate_kubeconfig(args.name)
   elif args.cmd == "aws-tag":
     print(args)
     if os.environ.get('KUBECTL_PLUGINS_LOCAL_FLAG_REMOVE', '') != '':
@@ -459,7 +461,7 @@ def main():
       logging.critical('No Resource passed')
       exit()
     print(args)
-    tag_resources(cluster_name=args.clusterName, resource=args.resource, remove=args.remove)
+    tag_resources(cluster_name=args.name, resource=args.resource, remove=args.remove)
 
 
 if __name__ == '__main__':
