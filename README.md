@@ -2,10 +2,14 @@
 This plugin allows to create, delete and display the information for a EKS Cluster from the kubectl tool
 
 ## Requirements
+
 * bash shell
 * aws cli
 * jq
-
+* Python Modules
+  * boto3
+  * jmespath
+  * yaml
 
 # THIS IS THE DEVEL VERSION INFO BELOW MAY NOT BE ACCURATE
 
