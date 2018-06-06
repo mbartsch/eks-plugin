@@ -29,14 +29,14 @@ logging.getLogger(__name__)
 logging.getLogger('boto3').setLevel(logging.INFO)
 logging.getLogger('botocore').setLevel(logging.CRITICAL)
 logging.getLogger('requests').setLevel(logging.INFO)
-# def getRegion(region='us-west-2'):
-#   if os.getenv('KUBECTL_PLUGINS_LOCAL_FLAG_REGION'):
-#     region = os.getenv('KUBECTL_PLUGINS_LOCAL_FLAG_REGION')
-#   else:
-#     logging.info("Using default us-west-2 region")
-#   #Set the KUBECTL_PLUGINS_LOCAL_FLAG_REGION to the value of region
-#   os.environ['KUBECTL_PLUGINS_LOCAL_FLAG_REGION'] = region
-#   return region
+def getRegion(region='us-west-2'):
+  if os.getenv('KUBECTL_PLUGINS_LOCAL_FLAG_REGION'):
+    region = os.getenv('KUBECTL_PLUGINS_LOCAL_FLAG_REGION')
+  else:
+    logging.info("Using default us-west-2 region")
+  #Set the KUBECTL_PLUGINS_LOCAL_FLAG_REGION to the value of region
+  os.environ['KUBECTL_PLUGINS_LOCAL_FLAG_REGION'] = region
+  return region
 
 def get_cluster_name():
   """
@@ -174,9 +174,9 @@ def describe_cluster(cluster_name, verbose='yes', output=True):
     if cluster['status'] == 'ACTIVE':
       print("Master Endpoint...: %s" % cluster['endpoint'])
     elif cluster['status'] == 'DELETING':
-      print("Master Endpoint..: CLUSTER_IN_DELETING_STATE")
+      print("Master Endpoint...: CLUSTER_IN_DELETING_STATE")
     else:
-      print("Master Endpoint..: CLUSTER_IN_CREATING_STATE")
+      print("Master Endpoint...: CLUSTER_IN_CREATING_STATE")
     if verbose != 'no':
       print("Created At........: %s" % cluster['createdAt'])
       print("Subnets...........: %s" % ','.join(cluster['resourcesVpcConfig']['subnetIds']))
