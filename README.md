@@ -20,7 +20,7 @@ To install this plugin , clone this git repository to $HOME/.kube/plugins
 ```
 mkdir $HOME/.kube/plugins
 cd $HOME/.kube/plugins
-git clone ssh://git.amazon.com/pkg/Kubectl-eks-plugin eks
+git clone https://gitub.com.com/mbartsch/eks-plugin eks
 ```
 
 ## Usage
