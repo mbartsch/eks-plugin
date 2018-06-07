@@ -1,0 +1,134 @@
+name: eks
+shortDesc: Allows you to install any kubectl plugin
+longDesc: |
+  This plugin allows to manipulate the EKS Cluster on AWS
+
+  This plugin requiere aws cli to be configured, for 'auto discovery' of
+  the resources it will search for Subnets and Security groups with the 
+  tags 
+
+  kubernetes.io/cluster/cluster-name
+
+  kubectl plugin eks create --name cluster-name
+  kubectl plugin eks list
+  kubectl plugin eks describe --name cluster-name
+  kubectl plugin eks create --name cluster-name
+  kubectl plugin eks showconfig
+
+
+example: kubectl plugin eks-cluster --help
+
+command: "./eks.py help"
+
+tree:
+  - name: help
+    shortDesc: help
+    command: "./eks.py help"
+  - name: create
+    shortDesc: create
+    command: "./eks.py create"
+    flags:
+      - name: region
+        desc: the region where to operate
+        defValue: us-west-2
+      - name: name
+        desc: name of the cluster
+      - name: subnets
+        desc: space separated list of subnet ids
+        defValue: auto
+      - name: security-groups
+        desc: space separated list of security group ids
+        defValue: auto
+      - name: role-arn
+        desc: arn of the service role
+        defValue: auto
+  - name: delete
+    shortDesc: delete
+    command: "./eks.py delete"
+    flags:
+      - name: name
+        desc: the region where to operate
+  - name: list
+    shortDesc: list
+    command: "./eks.py list"
+    flags:
+      - name: region
+        desc: the region where to operate
+        defValue: us-west-2
+  - name: describe
+    shortDesc: describe
+    command: "./eks.py describe"
+    flags:
+      - name: region
+        desc: the region where to operate
+        defValue: us-west-2
+      - name: name
+        desc: name of the cluster
+      - name: detail
+        desc: produce more detailed output
+        defValue: "no"
+  - name: generate-config
+    shortDesc: show configuration file
+    command: "./eks.py generate-config"
+    flags:
+      - name: region
+        desc: the region where to operate
+        defValue: us-west-2
+      - name: name
+        desc: name of the cluster
+  - name: genconf
+    shortDesc: show configuration file
+    command: "./eks.py generate-config"
+    flags:
+      - name: region
+        desc: the region where to operate
+        defValue: us-west-2
+      - name: name
+        desc: name of the cluster
+  - name: aws-tag
+    shortDesc: Manage some AWS Resources
+    command: "./eks.py aws-tag"
+    flags:
+      - name: region
+        desc: the region
+        defValue: us-west-2
+      - name: name
+        desc: name of the cluster
+      - name: resource
+        desc: resource to modify
+      - name: remove
+        desc: remove the K8S tag from resource
+  - name: nodes
+    shortDesc: List Public Ip Of Internal Nodes
+    command: ./eks-getnodes.sh
+    flags:
+      - name: region
+        desc: the region
+        defValue: us-west-2
+  - name: asg
+    shortDesc: display and modify the autoscaling group
+    command: ./eks-asg.sh
+    longDesc: |
+      kubectl plugin eks asg allows you to modify the autoscaling group
+      associated with the EKS cluster.
+
+      This will try to autodiscover the ASG by looking at 
+      the kubernetes.io/cluster/cluster-name tag on the autoscaling group.
+      
+      if more than 1 asg is returned, you must specify the asg with 
+      the asg-name option
+    flags:
+      - name: region
+        desc: the region where to operate
+        defValue: us-west-2
+      - name: name
+        desc: name of the cluster
+        defValue: demo
+      - name: asg-name
+        desc: name of the autoscaling group
+      - name: min
+        desc: min instances
+      - name: max
+        desc: max instances
+      - name: desired
+        desc: desired number of instances
