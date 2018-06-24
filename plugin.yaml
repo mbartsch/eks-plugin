@@ -46,6 +46,9 @@ tree:
     shortDesc: delete
     command: "./eks.py delete"
     flags:
+      - name: region
+        desc: AWS Region
+        defValue: us-west-2
       - name: name
         desc: the region where to operate
   - name: list
