@@ -331,7 +331,7 @@ def generate_kubeconfig(cluster_name):
   kubecfg.close()
   logging.info("kubeconfig file created on ~/.kube/config-aws")
 
-def delete_cluster(cluster_name):
+def delete_cluster(cluster_name,remove_tags=True):
   """
   This function calls delete_cluster to remove the name
   """
@@ -344,9 +344,10 @@ def delete_cluster(cluster_name):
     logging.critical("Failedto delete cluster %s. %s", cluster_name, format(exception))
     exit(99)
   print("Deleting cluster %s (Status=%s)" % (cluster['cluster']['name'], cluster['cluster']['status']))
-  for subnet in clusterInfo['resourcesVpcConfig']['subnetIds']:
-    logging.debug('Remove tag from subnet %s', subnet)
-    tag_resources(clusterInfo['name'], subnet, remove=True)
+  if remove_tags:
+    for subnet in clusterInfo['resourcesVpcConfig']['subnetIds']:
+      logging.debug('Remove tag from subnet %s', subnet)
+      tag_resources(clusterInfo['name'], subnet, remove=True)
   
   return cluster
 
@@ -428,6 +429,9 @@ def main():
   parser_delete.add_argument('--name', dest='name',
                              default=os.environ.get(
                                  'KUBECTL_PLUGINS_LOCAL_FLAG_NAME', None))
+  #parser_delete.add_argument('--clean-subnet', dest='clean_subnet',
+  #                           default=os.environ.get(
+  #                               'KUBECTL_PLUGINS_LOCAL_FLAG_CLEAN', None))
 
   ## Generate EKS Cluster Config
   parser_genconf = subparsers.add_parser('generate-config',
