@@ -12,6 +12,7 @@ import argparse
 import logging
 import os
 import subprocess
+import json
 
 import boto3
 import jmespath
@@ -113,12 +114,12 @@ def create_cluster(cluster_name, subnets, security_groups, role_arn):
     subnets = get_subnets(cluster_name)
   else:
     logging.debug('Using command parameters subnets')
-    subnets = subnets.split(',')
+    subnet_list = subnets.split(',')
 
   if security_groups == "auto":
     security_groups = get_security_groups(cluster_name)
   else:
-    security_groups = security_groups.split(',')
+    security_group_list = security_groups.split(',')
   if role_arn == "auto":
     role_arn = get_role_arn()
   else:
@@ -137,19 +138,28 @@ def create_cluster(cluster_name, subnets, security_groups, role_arn):
     logging.critical('Error creating the cluster, some parameters are missing')
     exit(1)
 
-  logging.debug('Subnets        : %s', subnets)
-  logging.debug('Security Groups: %s', security_groups)
+  logging.debug('Subnets        : %s', subnet_list)
+  logging.debug('Security Groups: %s', security_group_list)
   print(subnets, " ", security_groups, " ", role_arn)
   eks = boto3.client('eks', region_name=REGION)
   try:
     status = eks.create_cluster(name=cluster_name,
                                 roleArn=role_arn,
-                                resourcesVpcConfig={'subnetIds': subnets, 'securityGroupIds': security_groups})
+                                resourcesVpcConfig={'subnetIds': subnet_list, 'securityGroupIds': security_group_list})
   except Exception as exception:
     #logging all the others as warning
     logging.critical("Failed. %s", format(exception))
     exit(99)
   print(status['cluster'])
+  logging.debug('Tagging subnets')
+  for subnet in subnets:
+    try:
+      tag_resources(cluster_name,subnet)
+    except Exception as exception:
+      #logging all the others as warning
+      logging.critical("Failed tagging subnet. %s", format(exception))
+      exit(99)
+
   return status['cluster']
 
 def describe_cluster(cluster_name, verbose='yes', output=True):
@@ -326,14 +336,18 @@ def delete_cluster(cluster_name):
   This function calls delete_cluster to remove the name
   """
   eks = boto3.client('eks', region_name=REGION)
+  clusterInfo = describe_cluster(cluster_name=cluster_name,output=False)
+  
   try:
     cluster = eks.delete_cluster(name=cluster_name)
   except Exception as exception:
-    #logging all the others as warning
-    logging.critical("Failed. %s", format(exception))
+    logging.critical("Failedto delete cluster %s. %s", cluster_name, format(exception))
     exit(99)
-  cluster = cluster['cluster']
-  print("Deleting cluster %s (Status=%s)" % (cluster['name'], cluster['status']))
+  print("Deleting cluster %s (Status=%s)" % (cluster['cluster']['name'], cluster['cluster']['status']))
+  for subnet in clusterInfo['resourcesVpcConfig']['subnetIds']:
+    logging.debug('Remove tag from subnet %s', subnet)
+    tag_resources(clusterInfo['name'], subnet, remove=True)
+  
   return cluster
 
 
@@ -430,7 +444,7 @@ def main():
                           default=os.environ.get('KUBECTL_PLUGINS_LOCAL_FLAG_RESOURCE', None))
   parser_aws.add_argument('--remove', dest='remove', default=False, action='store_true')
   args = parser.parse_args()
-  print(args)
+  #print(args)
   REGION = args.REGION
   #parser.print_help()
   if args.cmd == "list":
