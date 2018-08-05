@@ -108,6 +108,9 @@ tree:
       - name: region
         desc: the region
         defValue: us-west-2
+      - name: node
+        desc: node to search
+        defValue: ""
   - name: asg
     shortDesc: display and modify the autoscaling group
     command: ./eks-asg.sh
